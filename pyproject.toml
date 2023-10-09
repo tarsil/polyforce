@@ -10,9 +10,7 @@ readme = "README.md"
 requires-python = ">=3.8"
 dynamic = ['version']
 license = "MIT"
-authors = [
-    { name = "Tiago Silva", email = "tiago.arasilva@gmail.com" },
-]
+authors = [{ name = "Tiago Silva", email = "tiago.arasilva@gmail.com" }]
 classifiers = [
     "Intended Audience :: Information Technology",
     "Intended Audience :: System Administrators",
@@ -124,10 +122,6 @@ source = ["tests", "polyforce"]
 module = "polyforce.tests.*"
 ignore_missing_imports = true
 check_untyped_defs = true
-
-[[tool.mypy.overrides]]
-ignore_missing_imports = true
-ignore_errors = true
 
 [[tool.mypy.overrides]]
 module = "docs_src.*"

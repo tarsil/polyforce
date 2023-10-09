@@ -5,6 +5,8 @@ from typing import Any, _SpecialForm
 
 from typing_extensions import get_args, get_origin
 
+from polyforce.constants import CLASS_SPECIAL_WORDS
+
 
 def polycheck(wrapped: Any) -> Any:
     """
@@ -30,9 +32,8 @@ def polycheck(wrapped: Any) -> Any:
                 "A return value of a function should be type annotated. "
                 "If your function doesn't return a value or returns None, annotate it as returning 'NoReturn' or 'None' respectively."
             )
-
         for name, parameter in signature.parameters.items():
-            if parameter.annotation == inspect.Signature.empty:
+            if name not in CLASS_SPECIAL_WORDS and parameter.annotation == inspect.Signature.empty:
                 raise TypeError(
                     f"'{name}' is not typed. If you are not sure, annotate with 'typing.Any'."
                 )
