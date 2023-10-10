@@ -210,3 +210,11 @@ def test_dict_and_not_str_raise_error_name_function_static():
 def test_str_and_not_int_raise_error_function_static():
     with pytest.raises(TypeError):
         Poly.my_function_static(int_value="a")
+
+
+def test_double_underscore():
+    with pytest.raises(ReturnSignatureMissing):
+
+        class Double(PolyModel):
+            def __test(self, name: str):
+                ...

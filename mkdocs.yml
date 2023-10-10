@@ -1,5 +1,5 @@
 site_name: Polyforce
-site_description: Enforce annotations in your python code.
+site_description: 🔥 Enforce static typing in your codebase at runtime 🔥
 site_url: https://polyforce.tarsild.io
 
 theme:
@@ -8,21 +8,21 @@ theme:
       language: en
       palette:
             - scheme: "default"
-              primary: "purple"
-              accent: "amber"
+              primary: "pink"
+              accent: "red"
               media: "(prefers-color-scheme: light)"
               toggle:
                     icon: "material/lightbulb"
                     name: "Switch to dark mode"
             - scheme: "slate"
               media: "(prefers-color-scheme: dark)"
-              primary: "purple"
-              accent: "amber"
+              primary: "pink"
+              accent: "red"
               toggle:
                     icon: "material/lightbulb-outline"
                     name: "Switch to light mode"
       favicon: statics/images/favicon.ico
-      logo: statics/images/logo-white.svg
+      logo: statics/images/white.png
       features:
             - search.suggest
             - search.highlight
@@ -38,6 +38,9 @@ plugins:
 
 nav:
       - Introduction: "index.md"
+      - Model: "model.md"
+      - Decorator: "decorator.md"
+      - Config: "config.md"
       - Contributing: "contributing.md"
       - Sponsorship: "sponsorship.md"
       - Release Notes: "release-notes.md"

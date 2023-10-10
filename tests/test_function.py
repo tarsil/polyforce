@@ -3,6 +3,7 @@ from typing import Any, Optional, Union
 import pytest
 
 from polyforce import polycheck
+from polyforce.exceptions import MissingAnnotation, ReturnSignatureMissing
 
 
 @polycheck
@@ -26,7 +27,7 @@ def test_polycheck_all():
 
 
 def test_missing_return_annotation():
-    with pytest.raises(TypeError) as raised:
+    with pytest.raises(ReturnSignatureMissing) as raised:
 
         @polycheck
         def test_func(name=None):
@@ -36,12 +37,12 @@ def test_missing_return_annotation():
 
     assert (
         str(raised.value)
-        == "A return value of a function should be type annotated. If your function doesn't return a value or returns None, annotate it as returning 'NoReturn' or 'None' respectively."
+        == "Missing return in 'test_func'. A return value of a function should be type annotated. If your function doesn't return a value or returns None, annotate it as returning 'NoReturn' or 'None' respectively."
     )
 
 
 def test_missing_typing_annotation():
-    with pytest.raises(TypeError) as raised:
+    with pytest.raises(MissingAnnotation) as raised:
 
         @polycheck
         def test_func(name=None) -> None:

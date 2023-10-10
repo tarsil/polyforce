@@ -6,6 +6,7 @@ from typing import Any, _SpecialForm
 from typing_extensions import get_args, get_origin
 
 from polyforce.constants import CLASS_SPECIAL_WORDS
+from polyforce.exceptions import MissingAnnotation, ReturnSignatureMissing
 
 
 def polycheck(wrapped: Any) -> Any:
@@ -28,15 +29,11 @@ def polycheck(wrapped: Any) -> Any:
 
         signature: inspect.Signature = inspect.Signature.from_callable(func)
         if signature.return_annotation == inspect.Signature.empty:
-            raise TypeError(
-                "A return value of a function should be type annotated. "
-                "If your function doesn't return a value or returns None, annotate it as returning 'NoReturn' or 'None' respectively."
-            )
+            raise ReturnSignatureMissing(func=func.__name__)
+
         for name, parameter in signature.parameters.items():
             if name not in CLASS_SPECIAL_WORDS and parameter.annotation == inspect.Signature.empty:
-                raise TypeError(
-                    f"'{name}' is not typed. If you are not sure, annotate with 'typing.Any'."
-                )
+                raise MissingAnnotation(name=name)
 
     def check_types(*args: Any, **kwargs: Any) -> Any:
         params = dict(zip(args_spec.args, args))
@@ -52,7 +49,7 @@ def polycheck(wrapped: Any) -> Any:
             if not isinstance(value, actual_type):
                 raise TypeError(
                     f"Expected type '{type_hint}' for attribute '{name}'"
-                    f" but received type '{type(value)}') instead."
+                    f" but received type '{type(value)}' instead."
                 )
 
     def get_actual_type(type_hint: Any, value: Any) -> Any:
