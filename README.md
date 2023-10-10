@@ -69,6 +69,12 @@ The library offers two ways of implementing the solution.
 * [Via model](./model.md)
 * [Via decorator](./decorator.md)
 
+## Installation
+
+```shell
+$ pip install polyforce
+```
+
 ## How to use it
 
 Let us see some scenarios where the conventional python is applied and then where **Polyforce**
