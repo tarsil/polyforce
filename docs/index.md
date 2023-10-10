@@ -111,7 +111,7 @@ the `str` declared for the parameter `name` **is merely visual**.
 ```python
 class MyClass:
 
-    def my_function(name: str):
+    def my_function(self, name: str):
         return name
 ```
 
