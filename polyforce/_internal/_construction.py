@@ -1,7 +1,7 @@
 import inspect
 from inspect import Parameter, Signature
 from itertools import islice
-from typing import TYPE_CHECKING, Any, Dict, List, Set, Tuple, Type, cast
+from typing import TYPE_CHECKING, Any, Dict, List, Set, Type, cast
 
 from polyforce.exceptions import MissingAnnotation, ReturnSignatureMissing
 
@@ -18,10 +18,13 @@ def complete_poly_class(cls: Type["PolyModel"], config: ConfigWrapper) -> bool:
     """
     methods: List[str] = [
         attr
-        for attr in dir(cls)
+        for attr in cls.__dict__.keys()
         if not attr.startswith("__") and not attr.endswith("__") and callable(getattr(cls, attr))
     ]
-    methods.append("__init__")
+
+    if "__init__" in cls.__dict__:
+        methods.append("__init__")
+
     signatures: Dict[str, Signature] = {}
 
     for method in methods:
@@ -31,6 +34,17 @@ def complete_poly_class(cls: Type["PolyModel"], config: ConfigWrapper) -> bool:
     return True
 
 
+def ignore_signature(signature: Signature) -> Signature:
+    """
+    Ignores the signature and assigns the Any to all the fields and return signature.
+    """
+    merged_params: Dict[str, Parameter] = {}
+    for param in islice(signature.parameters.values(), 1, None):
+        param = param.replace(annotation=Any)
+        merged_params[param.name] = param
+    return Signature(parameters=list(merged_params.values()), return_annotation=Any)
+
+
 def generate_model_signature(
     cls: Type["PolyModel"], value: str, config: ConfigWrapper
 ) -> Signature:
@@ -38,15 +52,14 @@ def generate_model_signature(
     Generates a signature for each method of the given class.
     """
     func = getattr(cls, value)
-    func_signature = Signature.from_callable(func)
+    signature = Signature.from_callable(func)
 
     if config.ignore:
-        return func_signature
+        return ignore_signature(signature)
 
-    params = func_signature.parameters.values()
+    params = signature.parameters.values()
     merged_params: Dict[str, Parameter] = {}
-
-    if func_signature.return_annotation == inspect.Signature.empty:
+    if signature.return_annotation == inspect.Signature.empty:
         raise ReturnSignatureMissing(func=value)
 
     for param in islice(params, 1, None):  # skip self arg
@@ -63,7 +76,7 @@ def generate_model_signature(
 
     # Generate the new signatures.
     return Signature(
-        parameters=list(merged_params.values()), return_annotation=func_signature.return_annotation
+        parameters=list(merged_params.values()), return_annotation=signature.return_annotation
     )
 
 
@@ -97,16 +110,15 @@ class PolyMetaclass(type):
             return super().__new__(cls, name, bases, attrs)
 
     @staticmethod
-    def _collect_data_from_bases(bases: Any) -> Tuple[Set[str], Set[str]]:
+    def _collect_data_from_bases(bases: Any) -> Set[str]:
         """
         Collects all the data from the bases.
         """
         from ..main import PolyModel
 
-        field_names: Set[str] = set()
         class_vars: Set[str] = set()
 
         for base in bases:
             if issubclass(base, PolyModel) and base is not PolyModel:
                 class_vars.update(base.__class_vars__)
-        return field_names, class_vars
+        return class_vars

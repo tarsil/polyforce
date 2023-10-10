@@ -2,9 +2,6 @@
 
 Do you like **Polyforce** and would like to help Polyforce, other user and the author?
 
-## 🐦 Follow Polyforce on Twitter
-
-
 ## ⭐ Star **Polyforce** on GitHub
 
 Giving a star to Polyforce is very simple and helps promoting the work across the developers around the world.
@@ -21,8 +18,6 @@ Following the GitHub repo will allow you to "watch" for any new release of Polyf
 
 You can click on "***watch***" and select "***custom***" -> "***Releases***"or any other you may find particular
 interesting to you.
-
-## 💬 Join the official Polyforce discord channel
 
 ## 🔥 Sponsor the author
 

@@ -1,4 +1,4 @@
-from inspect import Signature
+from inspect import Parameter, Signature
 from typing import TYPE_CHECKING, Any, ClassVar, Dict, Set, _SpecialForm
 
 from typing_extensions import get_args, get_origin
@@ -32,6 +32,15 @@ class PolyModel(metaclass=_construction.PolyMetaclass):
     config = Config()
 
     def __getattribute__(self, __name: str) -> Any:
+        """
+        Special action where it adds the static check validation
+        for the data being passed.
+
+        It checks if the values are properly checked and validated with
+        the right types.
+
+        The class version of the decorator `polyforce.decorator.polycheck`.
+        """
         try:
             func = object.__getattribute__(self, __name)
             signatures = object.__getattribute__(self, "__signature__")
@@ -41,11 +50,19 @@ class PolyModel(metaclass=_construction.PolyMetaclass):
                 nonlocal signature
                 nonlocal func
                 params = dict(zip(signature.parameters.values(), args))
-                params_from_kwargs = {
-                    signature.parameters.get(key, type(value)): value
-                    for key, value in kwargs.items()
-                }
-                params.update(params_from_kwargs)  # type: ignore
+                params_from_kwargs: Dict[Parameter, Any] = {}
+
+                for key, value in kwargs.items():
+                    parameter = signature.parameters.get(key)
+                    if parameter:
+                        params_from_kwargs[parameter] = value
+                        continue
+
+                    params_from_kwargs[
+                        Parameter(name=key, kind=Parameter.KEYWORD_ONLY, annotation=type(value))
+                    ] = value
+
+                params.update(params_from_kwargs)
 
                 for parameter, value in params.items():
                     type_hint = parameter.annotation
@@ -74,7 +91,7 @@ class PolyModel(metaclass=_construction.PolyMetaclass):
                             f" but received type '{type(value)}' instead."
                         )
 
-                    return func(*args, **kwargs)
+                return func(*args, **kwargs)
 
             return polycheck
 

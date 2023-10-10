@@ -24,7 +24,7 @@ class PolyException(Exception):
 
 class ReturnSignatureMissing(PolyException):
     detail: Union[str, None] = (
-        "Missing return: {func}. A return value of a function should be type annotated. "
+        "Missing return in '{func}'. A return value of a function should be type annotated. "
         "If your function doesn't return a value or returns None, annotate it as returning 'NoReturn' or 'None' respectively."
     )
 

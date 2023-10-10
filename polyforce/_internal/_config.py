@@ -14,9 +14,14 @@ class ConfigWrapper:
         config: Union[Config, Dict[str, Any], Type[Any], None],
         ignore: bool = False,
         ignored_types: Union[Any, None] = None,
+        **kwargs: Any,
     ):
         self.config = cast(Config, config)
         self.ignore = ignore
+        if ignored_types is not None:
+            assert isinstance(
+                ignored_types, (tuple, list)
+            ), "`ignored_types` must be a tuple or a list"
         self.ignored_types = ignored_types or ()
 
     @classmethod
