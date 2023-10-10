@@ -48,16 +48,28 @@ def polycheck(wrapped: Any) -> Any:
             if isinstance(type_hint, _SpecialForm) or type_hint == Any:
                 continue
 
-            actual_type = get_origin(type_hint)
-            if isinstance(actual_type, typing._SpecialForm):
-                actual_type = get_args(value)
-            _type = actual_type or type_hint
-
-            if not isinstance(value, _type):
+            actual_type = get_actual_type(type_hint=type_hint, value=value)
+            if not isinstance(value, actual_type):
                 raise TypeError(
                     f"Expected type '{type_hint}' for attribute '{name}'"
                     f" but received type '{type(value)}') instead."
                 )
+
+    def get_actual_type(type_hint: Any, value: Any) -> Any:
+        """
+        Checks for all the version of python.
+        """
+        if hasattr(type_hint, "__origin__"):
+            actual_type = type_hint.__origin__
+        else:
+            actual_type = get_origin(type_hint)
+
+        # For versions prior to python 3.10
+        if isinstance(actual_type, typing._SpecialForm):
+            actual_type = (
+                get_args(value) if not hasattr(type_hint, "__origin__") else type_hint.__args__
+            )
+        return actual_type or type_hint
 
     def decorate(func: Any) -> Any:
         @wraps(func)
