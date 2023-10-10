@@ -55,16 +55,16 @@ def test_missing_typing_annotation():
     )
 
 
-# def test_dict_and_not_str_raise_error():
-#     with pytest.raises(TypeError):
-#         User(union_values={"a": 1})
+def test_dict_and_not_str_raise_error():
+    with pytest.raises(TypeError):
+        my_function(union_values={"a": 1})
 
 
-# def test_dict_and_not_str_raise_error_name():
-#     with pytest.raises(TypeError):
-#         User(name={"a": 1})
+def test_dict_and_not_str_raise_error_name():
+    with pytest.raises(TypeError):
+        my_function(name={"a": 1})
 
 
-# def test_str_and_not_int_raise_error():
-#     with pytest.raises(TypeError):
-#         User(int_value="a")
+def test_str_and_not_int_raise_error():
+    with pytest.raises(TypeError):
+        my_function(int_value="a")
