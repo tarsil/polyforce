@@ -6,7 +6,7 @@ from polyforce import polycheck
 from polyforce.exceptions import MissingAnnotation, ReturnSignatureMissing
 
 
-@polycheck
+@polycheck()
 def my_function(
     union_values: Union[int, str, float],
     value: Any,
@@ -29,7 +29,7 @@ def test_polycheck_all():
 def test_missing_return_annotation():
     with pytest.raises(ReturnSignatureMissing) as raised:
 
-        @polycheck
+        @polycheck()
         def test_func(name=None):
             ...
 
@@ -44,7 +44,7 @@ def test_missing_return_annotation():
 def test_missing_typing_annotation():
     with pytest.raises(MissingAnnotation) as raised:
 
-        @polycheck
+        @polycheck()
         def test_func(name=None) -> None:
             ...
 

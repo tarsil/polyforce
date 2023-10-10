@@ -135,7 +135,7 @@ Now, let us use the same examples used before but using **Polyforce** and see wh
 from polyforce import polycheck
 
 
-@polycheck
+@polycheck()
 def my_function(name: str):
     return name
 ```
@@ -153,7 +153,7 @@ The correct way would be:
 from polyforce import polycheck
 
 
-@polycheck
+@polycheck()
 def my_function(name: str) -> str:
     return name
 ```

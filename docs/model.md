@@ -42,7 +42,7 @@ It will look like this:
 
 ### Ignore specific types
 
-What if you want to simply ignore some types? Meaning, you might want to pass arbitraty values that
+What if you want to simply ignore some types? Meaning, you might want to pass arbitrary values that
 you don't want them to be static checked.
 
 ```python hl_lines="3 10 24"

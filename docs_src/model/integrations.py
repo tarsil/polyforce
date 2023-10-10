@@ -15,10 +15,10 @@ class Movie(BaseModel):
     year: int
     actors: Union[List[Actor], None] = None
 
-    @polycheck
+    @polycheck()
     def add_actor(self, actor: Actor) -> None:
         self.actors.append(actor)
 
-    @polycheck
+    @polycheck()
     def set_actor(self, actor: Actor) -> None:
         ...

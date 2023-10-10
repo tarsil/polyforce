@@ -6,7 +6,7 @@ import pytest
 from polyforce import polycheck
 
 
-@polycheck
+@polycheck()
 @dataclass(frozen=True)
 class User:
     union_values: Union[int, str, float]
