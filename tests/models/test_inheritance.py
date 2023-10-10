@@ -34,3 +34,16 @@ def test_ignores_checks():
     profile = NewProfile()
     name = profile.get_name(1)
     assert name == 1
+
+
+def test_ignores_types():
+    class NewUser(PolyModel):
+        config = {"ignored_types": (str,)}
+
+    class NewProfile(NewUser):
+        def get_name(self, name: str) -> str:
+            return name
+
+    profile = NewProfile()
+    name = profile.get_name(1)
+    assert name == 1
