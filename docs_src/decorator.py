@@ -1,4 +1,4 @@
-from polyforce import Config, polycheck
+from polyforce import polycheck
 
 
 @polycheck(ignore=..., ignored_types=...)
