@@ -43,3 +43,7 @@ def test_missing_return():
 
     with pytest.raises(ReturnSignatureMissing):
         movie.set_actor(actor=Dummy())
+
+
+# class Film(BaseModel, PolyModel):
+#     ...
