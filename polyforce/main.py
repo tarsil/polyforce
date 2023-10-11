@@ -77,7 +77,7 @@ class PolyModel(metaclass=_construction.PolyMetaclass):
         except (KeyError, AttributeError):
             return object.__getattribute__(self, name)
 
-    def _extract_type_hint(type_hint: Union[Type, tuple]) -> Union[Type, tuple]:
+    def _extract_type_hint(self, type_hint: Union[Type, tuple]) -> Union[Type, tuple]:
         """
         Extracts the base type from a type hint, considering typing extensions.
 

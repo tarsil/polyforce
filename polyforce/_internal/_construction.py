@@ -71,8 +71,6 @@ def generate_model_signature(
             param = param.replace(annotation=Any)
         elif param.annotation in config.ignored_types:
             param = param.replace(annotation=Any)
-        if param.kind is param.VAR_KEYWORD:
-            continue
         merged_params[param.name] = param
 
     # Generate the new signatures.
