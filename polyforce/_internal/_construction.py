@@ -51,13 +51,13 @@ class PolyMetaclass(ABCMeta):
             model = super().__new__(cls, name, bases, attrs)
             parents = [parent for parent in bases if isinstance(parent, PolyMetaclass)]
             if not parents:
-                return model
+                return cast("Type[PolyModel]", model)
 
             model = cast(Type["PolyModel"], model)
             complete_poly_class(model, config_wrapper)
             return model
 
-        return super().__new__(cls, name, bases, attrs)
+        return cast("Type[PolyModel]", super().__new__(cls, name, bases, attrs))
 
     @staticmethod
     def _collect_data_from_bases(bases: Tuple[Type]) -> Set[str]:
