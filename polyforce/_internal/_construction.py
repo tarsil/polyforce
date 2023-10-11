@@ -1,4 +1,5 @@
 import inspect
+from abc import ABCMeta
 from inspect import Parameter, Signature
 from itertools import islice
 from typing import TYPE_CHECKING, Any, Dict, List, Set, Type, cast
@@ -80,7 +81,7 @@ def generate_model_signature(
     )
 
 
-class PolyMetaclass(type):
+class PolyMetaclass(ABCMeta):
     """
     Base metaclass used for the PolyModel objects
     and applies all static type checking needed
