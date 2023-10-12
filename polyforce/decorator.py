@@ -1,25 +1,35 @@
 import inspect
-import typing
-from typing import Any, _SpecialForm
+from typing import Any, Dict, Union, _SpecialForm
 
 from typing_extensions import get_args
 
 from polyforce.constants import CLASS_SPECIAL_WORDS
-from polyforce.exceptions import MissingAnnotation, ReturnSignatureMissing
+from polyforce.exceptions import MissingAnnotation, ReturnSignatureMissing, ValidationError
+
+from ._internal._errors import ErrorDetail
 
 
 class polycheck:
-    def __init__(self, ignore: bool = False, ignored_types: Any = None) -> None:
+    def __init__(
+        self,
+        signature: Union[inspect.Signature, None] = None,
+        ignore: bool = False,
+        ignored_types: Any = None,
+    ) -> None:
         """
         Initialize the PolyCheck decorator.
 
         Args:
+            signature (bool): A signature previously generated.
             ignore (bool): If True, type checking is bypassed.
             ignored_types (Union[type, Tuple[type, ...]]): Types to be ignored during type checking.
         """
         self.ignore = ignore
         self.ignored_types = tuple(ignored_types) if ignored_types is not None else ()
         self.args_spec = None
+        self.signature = signature
+        self.fn_name = None
+        self.class_or_object: Union[Any, None] = None
 
     def check_signature(self, func: Any) -> Any:
         """
@@ -32,7 +42,7 @@ class polycheck:
         if inspect.isclass(func):
             return func
 
-        signature: inspect.Signature = inspect.signature(func)
+        signature: inspect.Signature = self.signature or inspect.signature(func)
         if signature.return_annotation == inspect.Signature.empty:
             raise ReturnSignatureMissing(func=func.__name__)
 
@@ -61,14 +71,32 @@ class polycheck:
             ):
                 continue
 
-            actual_type = self.get_actual_type(type_hint=type_hint, value=value)
-            if not isinstance(value, actual_type) and not self.ignore:
-                raise TypeError(
-                    f"Expected type '{type_hint}' for attribute '{name}'"
-                    f" but received type '{type(value)}' instead."
-                )
+            actual_type = self.get_actual_type(type_hint=type_hint)
 
-    def get_actual_type(self, type_hint: Any, value: Any) -> Any:
+            if isinstance(actual_type, tuple):
+                if any(value == Any for value in actual_type):
+                    continue
+
+            if not isinstance(value, actual_type) and not self.ignore:
+                expected_value = (
+                    tuple(value.__name__ for value in actual_type)
+                    if isinstance(actual_type, tuple)
+                    else actual_type.__name__
+                )
+                error_message: str = (
+                    f"Expected '{expected_value}' for attribute '{name}', "
+                    f"but received type '{type(value).__name__}'."
+                )
+                error: Dict[str, Any] = ErrorDetail(
+                    source=self.fn_name,
+                    value=value,
+                    input=name,
+                    expected=expected_value,
+                    message=error_message,
+                )
+                raise ValidationError.from_exception_data([error])
+
+    def get_actual_type(self, type_hint: Any) -> Any:
         """
         Determine the actual type hint for a given parameter based on its value.
 
@@ -79,17 +107,9 @@ class polycheck:
         Returns:
             Any: The actual type hint.
         """
-        actual_type = type_hint
-
         if hasattr(type_hint, "__origin__"):
-            actual_type = type_hint.__origin__
-
-        if isinstance(actual_type, typing._SpecialForm):
-            actual_type = (
-                get_args(type_hint) if hasattr(type_hint, "__origin__") else type_hint.__args__
-            )
-
-        return actual_type
+            return get_args(type_hint)
+        return type_hint
 
     def __call__(self, fn: Any) -> Any:
         """
@@ -101,11 +121,22 @@ class polycheck:
         Returns:
             Any: The decorated function.
         """
-        self.args_spec = inspect.signature(fn)  # type: ignore
+        self.args_spec = self.signature or inspect.signature(fn)  # type: ignore
+        self.fn_name = fn.__name__
 
         def wrapper(*args: Any, **kwargs: Any) -> Any:
+            """
+            The wrapper covers for the decorator as individual as
+            well as coming from the classes.
+
+            When a signature is usually provided, the first argument is the class itself and therefore excluded.
+            """
+            if self.signature:
+                arguments = list(args)
+                arguments = arguments[1:]
+
             self.check_signature(fn)
-            self.check_types(*args, **kwargs)
+            self.check_types(*arguments, **kwargs)
             return fn(*args, **kwargs)
 
         return wrapper

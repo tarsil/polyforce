@@ -1,4 +1,7 @@
-from typing import Any, Union
+import json
+from typing import Any, Dict, List, Union, final
+
+from ._internal._errors import ErrorDetail
 
 
 class PolyException(Exception):
@@ -41,3 +44,27 @@ class MissingAnnotation(PolyException):
     def __init__(self, name: str) -> None:
         detail = self.detail.format(name=name)
         super().__init__(detail=detail)
+
+
+@final
+class ValidationError(ValueError):
+    @staticmethod
+    def from_exception_data(details: Union[tuple, list]) -> "ValidationError":
+        assert isinstance(details, (tuple, list, dict)), "details must be a list or a tuple."
+        assert any(
+            isinstance(value, dict) for value in details
+        ), "The contents must be in a dict like format"
+
+        return ValidationError(details)
+
+    def errors(self) -> List[ErrorDetail]:
+        """
+        Displays the original errors being sent.
+        """
+        return self.args[0]
+
+    def json(self) -> Dict[str, Any]:
+        """
+        Same as errors but in json format.
+        """
+        return json.loads(json.dumps(self.errors()))
