@@ -3,14 +3,13 @@ from typing import Any, Optional, Union
 import pytest
 
 from polyforce import Config, PolyModel
-from polyforce.exceptions import MissingAnnotation, ReturnSignatureMissing
+from polyforce.exceptions import MissingAnnotation, ReturnSignatureMissing, ValidationError
 
 
 class User(PolyModel):
     config = Config(ignore=False)
 
     def __init__(self, name: str, age: int) -> None:
-        super().__init__()
         self.name = name
         self.age = age
 
@@ -19,7 +18,7 @@ class Poly(PolyModel):
     def __init__(
         self,
         union_values: Union[int, str, float],
-        value: Any,
+        value: Union[Any, None] = None,
         name: str = "",
         int_value: int = 1,
         _not: Optional[bool] = None,
@@ -34,7 +33,7 @@ class Poly(PolyModel):
     def my_function(
         cls,
         union_values: Union[int, str, float],
-        value: Any,
+        value: Union[Any, None] = None,
         name: str = "",
         int_value: int = 1,
         _not: Optional[bool] = None,
@@ -45,7 +44,7 @@ class Poly(PolyModel):
     @staticmethod
     def my_function_static(
         union_values: Union[int, str, float],
-        value: Any,
+        value: Union[Any, None] = None,
         name: str = "",
         int_value: int = 1,
         _not: Optional[bool] = None,
@@ -56,7 +55,7 @@ class Poly(PolyModel):
     def my_func(
         self,
         union_values: Union[int, str, float],
-        value: Any,
+        value: Union[Any, None] = None,
         name: str = "",
         int_value: int = 1,
         _not: Optional[bool] = None,
@@ -120,18 +119,48 @@ def test_enforce_other_types():
 
 
 def test_dict_and_not_str_raise_error():
-    with pytest.raises(TypeError):
+    with pytest.raises(ValidationError) as raised:
         Poly(union_values={"a": 1})
+
+    assert raised.value.errors() == [
+        {
+            "source": "__init__",
+            "value": {"a": 1},
+            "input": "union_values",
+            "expected": ("int", "str", "float"),
+            "message": "Expected '('int', 'str', 'float')' for attribute 'union_values', but received type 'dict'.",
+        }
+    ]
 
 
 def test_dict_and_not_str_raise_error_name():
-    with pytest.raises(TypeError):
+    with pytest.raises(ValidationError) as raised:
         Poly(name={"a": 1})
+
+    assert raised.value.errors() == [
+        {
+            "source": "__init__",
+            "value": {"a": 1},
+            "input": "name",
+            "expected": "str",
+            "message": "Expected 'str' for attribute 'name', but received type 'dict'.",
+        }
+    ]
 
 
 def test_str_and_not_int_raise_error():
-    with pytest.raises(TypeError):
+    with pytest.raises(ValidationError) as raised:
         Poly(int_value="a")
+
+    assert raised.value.errors() == [
+        {
+            "source": "__init__",
+            "value": "a",
+            "input": "int_value",
+            "expected": "int",
+            "message": "Expected 'int' for attribute 'int_value', but received type 'str'.",
+        }
+    ]
 
 
 def test_polycheck_function():
@@ -146,20 +175,52 @@ def test_polycheck_all_function():
 
 def test_dict_and_not_str_raise_error_function():
     poly = Poly(union_values=2.0, value=["a", "list"], name="function", int_value=2, _not=True)
-    with pytest.raises(TypeError):
-        poly.my_func(union_values={"a": 1})
+    with pytest.raises(ValidationError) as raised:
+        poly.my_func(
+            union_values={"a": 1},
+        )
+
+    assert raised.value.errors() == [
+        {
+            "source": "Poly",
+            "value": {"a": 1},
+            "input": "union_values",
+            "expected": ("int", "str", "float"),
+            "message": "Expected '('int', 'str', 'float')' for attribute 'union_values', but received type 'dict'.",
+        }
+    ]
 
 
 def test_dict_and_not_str_raise_error_name_function():
     poly = Poly(union_values=2.0, value=["a", "list"], name="function", int_value=2, _not=True)
-    with pytest.raises(TypeError):
-        poly.my_func(name={"a": 1})
+    with pytest.raises(ValidationError) as raised:
+        poly.my_func(union_values=2.0, name={"a": 1})
+
+    assert raised.value.errors() == [
+        {
+            "source": "Poly",
+            "value": {"a": 1},
+            "input": "name",
+            "expected": "str",
+            "message": "Expected 'str' for attribute 'name', but received type 'dict'.",
+        }
+    ]
 
 
 def test_str_and_not_int_raise_error_function():
     poly = Poly(union_values=2.0, value=["a", "list"], name="function", int_value=2, _not=True)
-    with pytest.raises(TypeError):
-        poly.my_func(int_value="a")
+    with pytest.raises(ValidationError) as raised:
+        poly.my_func(int_value="a", union_values=2.0)
+
+    assert raised.value.errors() == [
+        {
+            "source": "Poly",
+            "value": "a",
+            "input": "int_value",
+            "expected": "int",
+            "message": "Expected 'int' for attribute 'int_value', but received type 'str'.",
+        }
+    ]
 
 
 def test_polycheck_function_class():
@@ -173,18 +234,48 @@ def test_polycheck_all_function_class():
 
 
 def test_dict_and_not_str_raise_error_function_class():
-    with pytest.raises(TypeError):
+    with pytest.raises(ValidationError) as raised:
         Poly.my_function(union_values={"a": 1})
+
+    assert raised.value.errors() == [
+        {
+            "source": "Poly",
+            "value": {"a": 1},
+            "input": "union_values",
+            "expected": ("int", "str", "float"),
+            "message": "Expected '('int', 'str', 'float')' for attribute 'union_values', but received type 'dict'.",
+        }
+    ]
 
 
 def test_dict_and_not_str_raise_error_name_function_class():
-    with pytest.raises(TypeError):
-        Poly.my_function(name={"a": 1})
+    with pytest.raises(ValidationError) as raised:
+        Poly.my_function(union_values=2, name={"a": 1}, value=3)
+
+    assert raised.value.errors() == [
+        {
+            "source": "Poly",
+            "value": {"a": 1},
+            "input": "name",
+            "expected": "str",
+            "message": "Expected 'str' for attribute 'name', but received type 'dict'.",
+        }
+    ]
 
 
 def test_str_and_not_int_raise_error_function_class():
-    with pytest.raises(TypeError):
-        Poly.my_function(int_value="a")
+    with pytest.raises(ValidationError) as raised:
+        Poly.my_function(union_values=2, int_value="a")
+
+    assert raised.value.errors() == [
+        {
+            "source": "Poly",
+            "value": "a",
+            "input": "int_value",
+            "expected": "int",
+            "message": "Expected 'int' for attribute 'int_value', but received type 'str'.",
+        }
+    ]
 
 
 def test_polycheck_function_static():
@@ -198,18 +289,48 @@ def test_polycheck_all_function_static():
 
 
 def test_dict_and_not_str_raise_error_function_static():
-    with pytest.raises(TypeError):
+    with pytest.raises(ValidationError) as raised:
         Poly.my_function_static(union_values={"a": 1})
+
+    assert raised.value.errors() == [
+        {
+            "source": "Poly",
+            "value": {"a": 1},
+            "input": "union_values",
+            "expected": ("int", "str", "float"),
+            "message": "Expected '('int', 'str', 'float')' for attribute 'union_values', but received type 'dict'.",
+        }
+    ]
 
 
 def test_dict_and_not_str_raise_error_name_function_static():
-    with pytest.raises(TypeError):
-        Poly.my_function_static(name={"a": 1})
+    with pytest.raises(ValidationError) as raised:
+        Poly.my_function_static(union_values=1, name={"a": 1})
+
+    assert raised.value.json() == [
+        {
+            "source": "Poly",
+            "value": {"a": 1},
+            "input": "name",
+            "expected": "str",
+            "message": "Expected 'str' for attribute 'name', but received type 'dict'.",
+        }
+    ]
 
 
 def test_str_and_not_int_raise_error_function_static():
-    with pytest.raises(TypeError):
-        Poly.my_function_static(int_value="a")
+    with pytest.raises(ValidationError) as raised:
+        Poly.my_function_static(union_values="a", int_value="a")
+
+    assert raised.value.errors() == [
+        {
+            "source": "Poly",
+            "value": "a",
+            "input": "int_value",
+            "expected": "int",
+            "message": "Expected 'int' for attribute 'int_value', but received type 'str'.",
+        }
+    ]
 
 
 def test_double_underscore():

@@ -4,6 +4,7 @@ from typing import Any, Optional, Union
 import pytest
 
 from polyforce import polycheck
+from polyforce.exceptions import ValidationError
 
 
 @polycheck()
@@ -36,15 +37,45 @@ def test_enforce_other_types():
 
 
 def test_dict_and_not_str_raise_error():
-    with pytest.raises(TypeError):
+    with pytest.raises(ValidationError) as raised:
         User(union_values={"a": 1})
+
+    assert raised.value.errors() == [
+        {
+            "source": "User",
+            "value": {"a": 1},
+            "input": "union_values",
+            "expected": ("int", "str", "float"),
+            "message": "Expected '('int', 'str', 'float')' for attribute 'union_values', but received type 'dict'.",
+        }
+    ]
 
 
 def test_dict_and_not_str_raise_error_name():
-    with pytest.raises(TypeError):
+    with pytest.raises(ValidationError) as raised:
         User(name={"a": 1})
+
+    assert raised.value.errors() == [
+        {
+            "source": "User",
+            "value": {"a": 1},
+            "input": "name",
+            "expected": "str",
+            "message": "Expected 'str' for attribute 'name', but received type 'dict'.",
+        }
+    ]
 
 
 def test_str_and_not_int_raise_error():
-    with pytest.raises(TypeError):
+    with pytest.raises(ValidationError) as raised:
         User(int_value="a")
+
+    assert raised.value.errors() == [
+        {
+            "source": "User",
+            "value": "a",
+            "input": "int_value",
+            "expected": "int",
+            "message": "Expected 'int' for attribute 'int_value', but received type 'str'.",
+        }
+    ]
