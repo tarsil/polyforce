@@ -2,13 +2,14 @@ import inspect
 from itertools import islice
 from typing import Any, Dict, List, Union, _SpecialForm
 
-from typing_extensions import get_args
+from typing_extensions import get_args, get_origin
 
 from polyforce.constants import CLASS_SPECIAL_WORDS
 from polyforce.exceptions import MissingAnnotation, ReturnSignatureMissing, ValidationError
 
 from ._internal._errors import ErrorDetail
 from ._internal._serializer import json_serializable
+from .core import _utils
 
 
 class polycheck:
@@ -62,27 +63,35 @@ class polycheck:
             **kwargs (Any): Keyword arguments.
         """
         merged_params: Dict[str, inspect.Signature] = {}
-        arg_params = (
-            self.args_spec.parameters if not self.signature else self.signature.parameters.values()
-        )
         if self.is_class_or_object:
             func_type = inspect.getattr_static(self.class_or_object, self.fn_name)
 
             # classmethod and staticmethod do not use the "self".
             if not isinstance(func_type, (classmethod, staticmethod)):
-                func_params = (
-                    list(islice(arg_params.values(), 1, None))
-                    if not self.signature
-                    else list(arg_params)
-                )
+                func_params = list(islice(self.args_spec.parameters.values(), 1, None))
                 merged_params = {param.name: param for param in func_params}
         else:
-            merged_params = arg_params
+            merged_params = self.args_spec.parameters
 
         params = dict(zip(merged_params, args))
         params.update(kwargs)
 
         for name, value in params.items():
+            # Raising error for unknown parameter passed.
+            if name not in self.args_spec.parameters:
+                values = tuple(param.name for param in self.args_spec.parameters.values())
+                error_message: str = (
+                    f"Unexpected parameter '{name}' in {self.fn_name}. Expects {values}"
+                )
+                error: ErrorDetail = ErrorDetail(
+                    source=self.fn_name,
+                    value=json_serializable(value),
+                    input=name,
+                    expected=values,
+                    message=error_message,
+                )
+                raise ValidationError.from_exception_data([error])
+
             type_hint = self.args_spec.parameters[name].annotation  # type: ignore
 
             if (
@@ -104,11 +113,11 @@ class polycheck:
                     if isinstance(actual_type, tuple)
                     else actual_type.__name__
                 )
-                error_message: str = (
+                error_message = (
                     f"Expected '{expected_value}' for attribute '{name}', "
                     f"but received type '{type(value).__name__}'."
                 )
-                error: ErrorDetail = ErrorDetail(
+                error = ErrorDetail(
                     source=self.fn_name,
                     value=json_serializable(value),
                     input=name,
@@ -128,6 +137,10 @@ class polycheck:
         Returns:
             Any: The actual type hint.
         """
+        origin = get_origin(type_hint)
+        if _utils.is_annotated(type_hint):
+            return origin
+
         if hasattr(type_hint, "__origin__"):
             return get_args(type_hint)
         return type_hint

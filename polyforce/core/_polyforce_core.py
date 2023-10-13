@@ -1,4 +1,4 @@
-from typing import Any, Type, final
+from typing import Any, final
 
 from typing_extensions import Self
 
@@ -12,4 +12,4 @@ class PolyforceUndefinedType:
         ...
 
 
-PolyforceUndefined = Type[PolyforceUndefinedType]
+PolyforceUndefined = PolyforceUndefinedType

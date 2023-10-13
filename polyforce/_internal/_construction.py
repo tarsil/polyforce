@@ -17,12 +17,14 @@ from typing import (
     cast,
 )
 
-from typing_extensions import get_args
+from typing_extensions import get_args, get_origin
 
 from polyforce.exceptions import MissingAnnotation, ReturnSignatureMissing, ValidationError
 
-from ..constants import SPECIAL_CHECK
+from ..constants import INIT_FUNCTION, SPECIAL_CHECK
+from ..core import _utils
 from ..decorator import polycheck
+from ..fields import PolyField
 from ._config import ConfigWrapper
 from ._errors import ErrorDetail
 from ._serializer import json_serializable
@@ -76,7 +78,10 @@ class PolyMetaclass(ABCMeta):
             model.__polymodel_custom_init__ = not getattr(
                 model.__init__, "__polymodel_base_init__", False
             )
-            complete_poly_class(model, config_wrapper)
+            # Making sure the PolyFields are only from this class object.
+            model.poly_fields = {}
+            model.__signature__ = {}
+            complete_poly_class(model, bases, config_wrapper)
             return model
         return cast("Type[PolyModel]", super().__new__(cls, name, bases, attrs))
 
@@ -133,7 +138,7 @@ class PolyMetaclass(ABCMeta):
         except (KeyError, AttributeError):
             return object.__getattribute__(self, name)
 
-    def _extract_type_hint(self, type_hint: Union[Type, tuple]) -> Union[Type, tuple]:
+    def _extract_type_hint(self, type_hint: Union[Type, tuple]) -> Any:
         """
         Extracts the base type from a type hint, considering typing extensions.
 
@@ -157,6 +162,10 @@ class PolyMetaclass(ABCMeta):
         original_hint = extract_type_hint(Union[int, str])  # Returns Union[int, str]
         ```
         """
+        origin = get_origin(type_hint)
+        if _utils.is_annotated(type_hint):
+            return origin
+
         if hasattr(type_hint, "__origin__"):
             return get_args(type_hint)
         return type_hint
@@ -228,7 +237,7 @@ class PolyMetaclass(ABCMeta):
         return polycheck
 
 
-def complete_poly_class(cls: Type["PolyModel"], config: ConfigWrapper) -> bool:
+def complete_poly_class(cls: Type["PolyModel"], bases: Tuple[Type], config: ConfigWrapper) -> bool:
     """
     Completes the polyclass model construction and applies all the fields and configurations.
 
@@ -249,18 +258,34 @@ def complete_poly_class(cls: Type["PolyModel"], config: ConfigWrapper) -> bool:
         and inspect.isroutine(getattr(cls, attr))
     ]
 
-    if cls.__polymodel_custom_init__:
-        methods.append("__init__")
+    for base in bases:
+        if hasattr(base, "__signature__"):
+            cls.__signature__.update(base.__signature__)
+
+    if INIT_FUNCTION in cls.__dict__ or (
+        INIT_FUNCTION not in cls.__dict__ and INIT_FUNCTION not in cls.__signature__
+    ):
+        methods.append(INIT_FUNCTION)
 
     signatures: Dict[str, Signature] = {}
 
     for method in methods:
         signatures[method] = generate_model_signature(cls, method, config)
 
-    cls.__signature__ = signatures  # type: ignore[misc]
+    cls.__signature__.update(signatures)
 
-    if cls.__polymodel_custom_init__:
+    # Special decorator for the __init__ since it is not manipulated by the
+    # __getattribute__ functionality
+    if INIT_FUNCTION in cls.__dict__ or (
+        INIT_FUNCTION not in cls.__dict__ and INIT_FUNCTION not in cls.__signature__
+    ):
         decorate_function(cls, config)
+
+    # Generate the PolyFields
+    for value, signature in cls.__signature__.items():
+        for param in signature.parameters.values():
+            # Generate the PolyField for each function.
+            generate_polyfields(cls, value, param)
     return True
 
 
@@ -295,6 +320,23 @@ def ignore_signature(signature: Signature) -> Signature:
         param = param.replace(annotation=Any)
         merged_params[param.name] = param
     return Signature(parameters=list(merged_params.values()), return_annotation=Any)
+
+
+def generate_polyfields(
+    cls: Type["PolyModel"], method: str, parameter: Parameter
+) -> Dict[str, Dict[str, PolyField]]:
+    """
+    For all the fields found in the signature, it will generate
+    PolyField type variable.
+    """
+    field = PolyField(annotation=parameter.annotation, name=parameter.name)
+    field_data = {field.name: field}
+
+    if method not in cls.poly_fields:
+        cls.poly_fields[method] = {}
+
+    cls.poly_fields[method].update(field_data)
+    return cls.poly_fields
 
 
 def generate_model_signature(
