@@ -30,7 +30,7 @@ class Movie(PolyModel):
 
 
 def test_add_value():
-    movie = Movie(name="Avengers", year="2023")
+    movie = Movie(name="Avengers", year=2012)
     movie.add_actor(actor=Dummy())
 
     assert len(movie.actors) == 1

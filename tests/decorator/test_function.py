@@ -3,7 +3,7 @@ from typing import Any, Optional, Union
 import pytest
 
 from polyforce import polycheck
-from polyforce.exceptions import MissingAnnotation, ReturnSignatureMissing
+from polyforce.exceptions import MissingAnnotation, ReturnSignatureMissing, ValidationError
 
 
 @polycheck()
@@ -57,15 +57,45 @@ def test_missing_typing_annotation():
 
 
 def test_dict_and_not_str_raise_error():
-    with pytest.raises(TypeError):
+    with pytest.raises(ValidationError) as raised:
         my_function(union_values={"a": 1})
+
+    assert raised.value.errors() == [
+        {
+            "source": "my_function",
+            "value": {"a": 1},
+            "input": "union_values",
+            "expected": ("int", "str", "float"),
+            "message": "Expected '('int', 'str', 'float')' for attribute 'union_values', but received type 'dict'.",
+        }
+    ]
 
 
 def test_dict_and_not_str_raise_error_name():
-    with pytest.raises(TypeError):
+    with pytest.raises(ValidationError) as raised:
         my_function(name={"a": 1})
+
+    assert raised.value.errors() == [
+        {
+            "source": "my_function",
+            "value": {"a": 1},
+            "input": "name",
+            "expected": "str",
+            "message": "Expected 'str' for attribute 'name', but received type 'dict'.",
+        }
+    ]
 
 
 def test_str_and_not_int_raise_error():
-    with pytest.raises(TypeError):
+    with pytest.raises(ValidationError) as raised:
         my_function(int_value="a")
+
+    assert raised.value.errors() == [
+        {
+            "source": "my_function",
+            "value": "a",
+            "input": "int_value",
+            "expected": "int",
+            "message": "Expected 'int' for attribute 'int_value', but received type 'str'.",
+        }
+    ]

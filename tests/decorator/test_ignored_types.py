@@ -3,6 +3,7 @@ from typing import Any
 import pytest
 
 from polyforce import polycheck
+from polyforce.exceptions import ValidationError
 
 
 class Dummy:
@@ -28,8 +29,18 @@ def another_function(
 
 
 def test_polycheck_error():
-    with pytest.raises(TypeError):
+    with pytest.raises(ValidationError) as raised:
         another_function(name="a")
+
+    assert raised.value.errors() == [
+        {
+            "source": "another_function",
+            "value": "a",
+            "input": "name",
+            "expected": "Dummy",
+            "message": "Expected 'Dummy' for attribute 'name', but received type 'str'.",
+        }
+    ]
 
 
 @polycheck(ignored_types=(Dummy,))

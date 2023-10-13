@@ -1,5 +1,5 @@
 import inspect
-from typing import Any, Dict, Union, _SpecialForm
+from typing import Any, Dict, List, Union, _SpecialForm
 
 from typing_extensions import get_args
 
@@ -131,12 +131,15 @@ class polycheck:
 
             When a signature is usually provided, the first argument is the class itself and therefore excluded.
             """
+            arguments: List[Any] = []
             if self.signature:
                 arguments = list(args)
                 arguments = arguments[1:]
 
             self.check_signature(fn)
-            self.check_types(*arguments, **kwargs)
+            self.check_types(*arguments, **kwargs) if self.signature else self.check_types(
+                *args, **kwargs
+            )
             return fn(*args, **kwargs)
 
         return wrapper

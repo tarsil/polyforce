@@ -4,7 +4,7 @@ import pytest
 from pydantic import BaseModel
 
 from polyforce import polycheck
-from polyforce.exceptions import ReturnSignatureMissing
+from polyforce.exceptions import ReturnSignatureMissing, ValidationError
 
 
 class Dummy:
@@ -34,8 +34,19 @@ class Movie(BaseModel):
 def test_add_value():
     movie = Movie(name="Avengers", year="2023")
 
-    with pytest.raises(TypeError):
+    with pytest.raises(ValidationError) as raised:
         movie.add_actor(actor=Dummy())
+
+    # breakpoint()
+    assert raised.value.errors() == [
+        {
+            "source": "__init__",
+            "value": {"a": 1},
+            "input": "name",
+            "expected": "str",
+            "message": "Expected 'str' for attribute 'name', but received type 'dict'.",
+        }
+    ]
 
 
 def test_missing_return():

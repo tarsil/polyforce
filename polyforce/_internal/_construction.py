@@ -260,11 +260,11 @@ def complete_poly_class(cls: Type["PolyModel"], config: ConfigWrapper) -> bool:
     cls.__signature__ = signatures
 
     if cls.__polymodel_custom_init__:
-        decorate_init(cls, config)
+        decorate_function(cls, config)
     return True
 
 
-def decorate_init(cls: Type["PolyModel"], config: ConfigWrapper) -> None:
+def decorate_function(cls: Type["PolyModel"], config: ConfigWrapper) -> None:
     """
     Decorates the __init__ function to make sure it can apply
     the validations upon instantiation.
