@@ -1,5 +1,7 @@
 import json
-from typing import Any, Dict, List, Union, final
+from typing import Any, List, Union, cast, final
+
+import orjson
 
 from ._internal._errors import ErrorDetail
 
@@ -61,10 +63,10 @@ class ValidationError(ValueError):
         """
         Displays the original errors being sent.
         """
-        return self.args[0]
+        return cast(List[ErrorDetail], self.args[0])
 
-    def json(self) -> Dict[str, Any]:
+    def json(self) -> Any:
         """
         Same as errors but in json format.
         """
-        return json.loads(json.dumps(self.errors()))
+        return orjson.loads(json.dumps(self.errors()))

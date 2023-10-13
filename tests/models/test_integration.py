@@ -37,14 +37,13 @@ def test_add_value():
     with pytest.raises(ValidationError) as raised:
         movie.add_actor(actor=Dummy())
 
-    # breakpoint()
     assert raised.value.errors() == [
         {
-            "source": "__init__",
-            "value": {"a": 1},
-            "input": "name",
-            "expected": "str",
-            "message": "Expected 'str' for attribute 'name', but received type 'dict'.",
+            "source": "add_actor",
+            "value": {},
+            "input": "actor",
+            "expected": "Actor",
+            "message": "Expected 'Actor' for attribute 'actor', but received type 'Dummy'.",
         }
     ]
 
@@ -54,7 +53,3 @@ def test_missing_return():
 
     with pytest.raises(ReturnSignatureMissing):
         movie.set_actor(actor=Dummy())
-
-
-# class Film(BaseModel, PolyModel):
-#     ...

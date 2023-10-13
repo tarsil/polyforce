@@ -25,6 +25,7 @@ from ..constants import SPECIAL_CHECK
 from ..decorator import polycheck
 from ._config import ConfigWrapper
 from ._errors import ErrorDetail
+from ._serializer import json_serializable
 
 if TYPE_CHECKING:
     from ..main import PolyModel
@@ -67,17 +68,16 @@ class PolyMetaclass(ABCMeta):
             attrs["config"] = config_wrapper.config
             attrs["__class_vars__"] = base_class_vars
 
+            model = cast("Type[PolyModel]", super().__new__(cls, name, bases, attrs))
             parents = [parent for parent in bases if isinstance(parent, PolyMetaclass)]
             if not parents:
-                return cast("Type[PolyModel]", model)
-
-            model = super().__new__(cls, name, bases, attrs)
+                return model
 
             model.__polymodel_custom_init__ = not getattr(
                 model.__init__, "__polymodel_base_init__", False
             )
             complete_poly_class(model, config_wrapper)
-            return cast(Type["PolyModel"], model)
+            return model
         return cast("Type[PolyModel]", super().__new__(cls, name, bases, attrs))
 
     @staticmethod
@@ -214,9 +214,9 @@ class PolyMetaclass(ABCMeta):
                             f"Expected '{expected_value}' for attribute '{name}', "
                             f"but received type '{type(value).__name__}'."
                         )
-                        error: Dict[str, Any] = ErrorDetail(
+                        error: ErrorDetail = ErrorDetail(
                             source=self.__name__,
-                            value=value,
+                            value=json_serializable(value),
                             input=name,
                             expected=expected_value,
                             message=error_message,
@@ -257,7 +257,7 @@ def complete_poly_class(cls: Type["PolyModel"], config: ConfigWrapper) -> bool:
     for method in methods:
         signatures[method] = generate_model_signature(cls, method, config)
 
-    cls.__signature__ = signatures
+    cls.__signature__ = signatures  # type: ignore[misc]
 
     if cls.__polymodel_custom_init__:
         decorate_function(cls, config)
@@ -275,7 +275,7 @@ def decorate_function(cls: Type["PolyModel"], config: ConfigWrapper) -> None:
     signature: Signature = cls.__signature__["__init__"]
     decorator = polycheck(signature=signature, **config.config)
     init_func = decorator(cls.__init__)
-    cls.__init__ = init_func
+    cls.__init__ = init_func  # type: ignore[method-assign]
 
 
 def ignore_signature(signature: Signature) -> Signature:
@@ -327,7 +327,7 @@ def generate_model_signature(
 
     # classmethod and staticmethod do not use the "self".
     if not isinstance(func_type, (classmethod, staticmethod)):
-        params = list(islice(params, 1, None))
+        params = list(islice(params, 1, None))  # type: ignore[assignment]
 
     for param in params:  # Skip self argument
         if param.annotation == Signature.empty:

@@ -38,7 +38,7 @@ classifiers = [
     "Topic :: Internet :: WWW/HTTP :: HTTP Servers",
     "Topic :: Internet :: WWW/HTTP",
 ]
-dependencies = []
+dependencies = ["orjson>=3.9.9,<5.0"]
 keywords = ["polyforce"]
 
 [project.urls]
@@ -91,6 +91,7 @@ disallow_any_generics = false
 implicit_reexport = false
 show_error_codes = true
 disallow_incomplete_defs = true
+disable_error_code = "attr-defined,has-type,override"
 warn_unused_ignores = true
 warn_redundant_casts = true
 no_implicit_optional = false

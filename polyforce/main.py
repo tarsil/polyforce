@@ -79,4 +79,4 @@ class PolyModel(metaclass=_construction.PolyMetaclass):
             else:
                 return func
         except (KeyError, AttributeError):
-            return super().__getattribute__(self, name)
+            return super().__getattribute__(name)

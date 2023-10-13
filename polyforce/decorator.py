@@ -1,4 +1,5 @@
 import inspect
+from itertools import islice
 from typing import Any, Dict, List, Union, _SpecialForm
 
 from typing_extensions import get_args
@@ -7,6 +8,7 @@ from polyforce.constants import CLASS_SPECIAL_WORDS
 from polyforce.exceptions import MissingAnnotation, ReturnSignatureMissing, ValidationError
 
 from ._internal._errors import ErrorDetail
+from ._internal._serializer import json_serializable
 
 
 class polycheck:
@@ -29,7 +31,8 @@ class polycheck:
         self.args_spec = None
         self.signature = signature
         self.fn_name = None
-        self.class_or_object: Union[Any, None] = None
+        self.is_class_or_object: bool = False
+        self.class_or_object: Any = None
 
     def check_signature(self, func: Any) -> Any:
         """
@@ -58,7 +61,25 @@ class polycheck:
             *args (Any): Positional arguments.
             **kwargs (Any): Keyword arguments.
         """
-        params = dict(zip(self.args_spec.parameters, args))  # type: ignore
+        merged_params: Dict[str, inspect.Signature] = {}
+        arg_params = (
+            self.args_spec.parameters if not self.signature else self.signature.parameters.values()
+        )
+        if self.is_class_or_object:
+            func_type = inspect.getattr_static(self.class_or_object, self.fn_name)
+
+            # classmethod and staticmethod do not use the "self".
+            if not isinstance(func_type, (classmethod, staticmethod)):
+                func_params = (
+                    list(islice(arg_params.values(), 1, None))
+                    if not self.signature
+                    else list(arg_params)
+                )
+                merged_params = {param.name: param for param in func_params}
+        else:
+            merged_params = arg_params
+
+        params = dict(zip(merged_params, args))
         params.update(kwargs)
 
         for name, value in params.items():
@@ -87,9 +108,9 @@ class polycheck:
                     f"Expected '{expected_value}' for attribute '{name}', "
                     f"but received type '{type(value).__name__}'."
                 )
-                error: Dict[str, Any] = ErrorDetail(
+                error: ErrorDetail = ErrorDetail(
                     source=self.fn_name,
-                    value=value,
+                    value=json_serializable(value),
                     input=name,
                     expected=expected_value,
                     message=error_message,
@@ -132,9 +153,14 @@ class polycheck:
             When a signature is usually provided, the first argument is the class itself and therefore excluded.
             """
             arguments: List[Any] = []
-            if self.signature:
+
+            # For the signature being passed and
+            # to cover the decorator inside a class
+            if self.signature or len(args) == 1:
                 arguments = list(args)
                 arguments = arguments[1:]
+                self.is_class_or_object = True
+                self.class_or_object = args[0]
 
             self.check_signature(fn)
             self.check_types(*arguments, **kwargs) if self.signature else self.check_types(
