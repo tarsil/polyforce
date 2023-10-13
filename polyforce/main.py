@@ -1,7 +1,9 @@
-from typing import TYPE_CHECKING, Any, ClassVar, Dict, Set
+from inspect import Signature
+from typing import TYPE_CHECKING, Any, ClassVar, Dict, Set, Union
 
 from ._internal import _construction
 from .config import Config
+from .constants import SPECIAL_CHECK
 
 _object_setattr = _construction.object_setattr
 
@@ -48,8 +50,33 @@ class PolyModel(metaclass=_construction.PolyMetaclass):
             )
         _object_setattr(self, name, value)
 
-    # def __getattribute__(self, name: str) -> Any:
-    #     if name == "my_func":
-    #         breakpoint()
-    #         print(name)
-    #     return super().__getattribute__(name)
+    def __getattribute__(self, name: str) -> Any:
+        """
+        Get an attribute with static type checking.
+
+        Args:
+            name (str): The name of the attribute to access.
+
+        Returns:
+            Any: The value of the attribute.
+
+        Raises:
+            AttributeError: If the attribute does not exist.
+
+        Example:
+        ```
+        obj = MyObject(42)
+        value = obj.value  # Accessing the 'value' attribute
+        ```
+        """
+        try:
+            func = super().__getattribute__(name)
+            __signature__: Dict[str, Any] = super().__getattribute__("__signature__")
+            signature: Union[Signature, None] = __signature__.get(name, None)
+
+            if signature is not None and name not in SPECIAL_CHECK:
+                return self.__class__._add_static_type_checking(func, signature)
+            else:
+                return func
+        except (KeyError, AttributeError):
+            return super().__getattribute__(self, name)
