@@ -165,7 +165,9 @@ class PolyMetaclass(ABCMeta):
             origin = type_hint.__args__  # type: ignore
         return origin
 
-    def _add_static_type_checking(self, func: Any, signature: Signature) -> Callable:
+    def _add_static_type_checking(
+        self: Type["PolyModel"], func: Any, signature: Signature
+    ) -> Callable:
         """
         Add static type checking to a method or function.
 
@@ -195,9 +197,9 @@ class PolyMetaclass(ABCMeta):
             bound.apply_defaults()
 
             for name, value in bound.arguments.items():
-                nonlocal self
-                if name in signature.parameters:
-                    expected_type = signature.parameters[name].annotation
+                if name in self.poly_fields[func.__name__]:
+                    field: PolyField = self.poly_fields[func.__name__][name]
+                    expected_type = field.annotation
 
                     if expected_type in (_SpecialForm, Any):
                         continue

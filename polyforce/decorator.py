@@ -93,7 +93,7 @@ class polycheck:
         params.update(kwargs)
 
         for name, value in params.items():
-            field: PolyField = self.poly_fields[self.fn_name].get(name)
+            field: PolyField = self.poly_fields[self.fn_name][name]
             type_hint = field.annotation
 
             if (
