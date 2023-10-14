@@ -29,7 +29,7 @@ from __future__ import annotations as _annotations
 import sys
 import types
 import typing
-from typing import Any
+from typing import Any, Type
 
 import typing_extensions
 
@@ -59,22 +59,22 @@ else:
 
 if sys.version_info < (3, 10):
 
-    def origin_is_union(tp: type[Any] | None) -> bool:
+    def origin_is_union(tp: Type[Any] | None) -> bool:
         return tp is typing.Union
 
     WithArgsTypes = (TypingGenericAlias,)
 
 else:
 
-    def origin_is_union(tp: type[Any] | None) -> bool:
+    def origin_is_union(tp: Type[Any] | None) -> bool:
         return tp is typing.Union or tp is types.UnionType
 
     WithArgsTypes = typing._GenericAlias, types.GenericAlias, types.UnionType  # type: ignore[attr-defined]
 
 
 if sys.version_info < (3, 10):
-    NoneType = type(None)
-    EllipsisType = type(Ellipsis)
+    NoneType = Type(None)
+    EllipsisType = Type(Ellipsis)
 else:
     pass
 
@@ -165,7 +165,7 @@ def display_as_type(obj: Any) -> str:
         else:
             args = ", ".join(map(display_as_type, typing_extensions.get_args(obj)))
         return f"{obj.__qualname__}[{args}]"
-    elif isinstance(obj, type):  # type: ignore
+    elif isinstance(obj, type):  # type: ignore[unreachable,unused-ignore]
         return obj.__qualname__
     else:
         return repr(obj).replace("typing.", "").replace("typing_extensions.", "")

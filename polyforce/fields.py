@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Any, Callable, List, Type, TypedDict, Union
+from typing import TYPE_CHECKING, Any, Callable, List, Tuple, Type, TypedDict, Union
 
 from typing_extensions import Annotated, Self, Unpack, get_args
 
@@ -99,8 +99,8 @@ class PolyField(_representation.Representation):
 
     @classmethod
     def _extract_annotation(
-        cls, annotation: type[Any] | None
-    ) -> tuple[type[Any] | None, list[Any]]:
+        cls, annotation: Union[Type[Any], None]
+    ) -> Tuple[Union[Type[Any], None], List[Any]]:
         """
         Extracts the annotation.
         """

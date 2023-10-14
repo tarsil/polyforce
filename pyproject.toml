@@ -131,6 +131,11 @@ check_untyped_defs = true
 module = "docs_src.*"
 ignore_errors = true
 
+[[tool.mypy.overrides]]
+module = ["orjson.*"]
+ignore_missing_imports = true
+ignore_errors = true
+
 [tool.pytest.ini_options]
 addopts = ["--strict-config", "--strict-markers"]
 xfail_strict = true
