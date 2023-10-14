@@ -1,9 +1,13 @@
 from inspect import Signature
 from typing import TYPE_CHECKING, Any, ClassVar, Dict, Set, Union
 
-from ._internal import _construction
+from ._internal import _construction, _representation
 from .config import Config
 from .constants import SPECIAL_CHECK
+from .fields import PolyField
+
+if TYPE_CHECKING:
+    from ._internal._representation import ReprArgs
 
 _object_setattr = _construction.object_setattr
 
@@ -29,7 +33,7 @@ class PolyModel(metaclass=_construction.PolyMetaclass):
 
     if TYPE_CHECKING:
         config: ClassVar[Config]
-        poly_fields: ClassVar[Dict[str, Any]]
+        poly_fields: ClassVar[Dict[str, Dict[str, PolyField]]]
         __class_vars__: ClassVar[Set[str]]
         __polymodel_custom_init__: ClassVar[bool]
     else:
@@ -80,3 +84,20 @@ class PolyModel(metaclass=_construction.PolyMetaclass):
                 return func
         except (KeyError, AttributeError):
             return super().__getattribute__(name)
+
+    __repr_name__ = _representation.Representation.__repr_name__
+    __repr_str__ = _representation.Representation.__repr_str__
+    __pretty__ = _representation.Representation.__pretty__
+    __rich_repr__ = _representation.Representation.__rich_repr__
+
+    def __repr_args__(self) -> "ReprArgs":
+        for k, v in self.__dict__.items():
+            field = self.poly_fields.get(k)
+            if field:
+                yield k, v
+
+    def __str__(self) -> str:
+        return self.__repr_str__(" ")  # type: ignore
+
+    def __repr__(self) -> str:
+        return f'{self.__repr_name__()}({self.__repr_str__(", ")})'  # type: ignore
