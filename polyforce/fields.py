@@ -17,7 +17,6 @@ class _FieldInputs(TypedDict, total=False):
     title: Union[str, None]
     name: Union[str, None]
     description: Union[str, None]
-    required: bool
 
 
 _DefaultValues = {
@@ -25,7 +24,6 @@ _DefaultValues = {
     "default_factory": None,
     "title": None,
     "description": None,
-    "required": False,
 }
 
 
@@ -56,7 +54,6 @@ class PolyField(_representation.Representation):
         "title",
         "name",
         "description",
-        "required",
         "metadata",
         "_attributes_set",
     )
@@ -67,7 +64,6 @@ class PolyField(_representation.Representation):
     title: Union[str, None]
     name: Union[str, None]
     description: Union[str, None]
-    required: bool
     metadata: List[Any]
 
     def __init__(self, **kwargs: Unpack[_FieldInputs]) -> None:
@@ -94,7 +90,6 @@ class PolyField(_representation.Representation):
         self.title = kwargs.pop("title", None)
         self.name = kwargs.pop("name", None)
         self.description = kwargs.pop("description", None)
-        self.required = kwargs.pop("required", False)
         self.metadata = metadata
 
     @classmethod
@@ -109,6 +104,14 @@ class PolyField(_representation.Representation):
                 first_arg, *extra_args = get_args(annotation)
                 return first_arg, list(extra_args)
         return annotation, []
+
+    def is_required(self) -> bool:
+        """Check if the argument is required.
+
+        Returns:
+            `True` if the argument is required, `False` otherwise.
+        """
+        return self.default is PolyforceUndefined and self.default_factory is None
 
     @classmethod
     def from_field(cls, default: Any = PolyforceUndefined, **kwargs: Unpack[_FieldInputs]) -> Self:
@@ -137,7 +140,7 @@ class PolyField(_representation.Representation):
         yield "annotation", _representation.PlainRepresentation(
             _representation.display_as_type(self.annotation)
         )
-        yield "required", self.required
+        yield "required", self.is_required()
 
         for s in self.__slots__:
             if s == "_attributes_set":
@@ -162,12 +165,10 @@ def Field(
     default_factory: Union[Callable[[], Any], None] = PolyforceUndefined,
     title: Union[str, None] = PolyforceUndefined,  # type: ignore
     description: Union[str, None] = PolyforceUndefined,  # type: ignore
-    required: bool = PolyforceUndefined,  # type: ignore
 ) -> PolyField:
     return PolyField.from_field(
         default=default,
         default_factory=default_factory,
         title=title,
         description=description,
-        required=required,
     )

@@ -20,6 +20,7 @@ from typing import (
 from polyforce.exceptions import MissingAnnotation, ReturnSignatureMissing, ValidationError
 
 from ..constants import INIT_FUNCTION, SPECIAL_CHECK
+from ..core._polyforce_core import PolyforceUndefined
 from ..decorator import polycheck
 from ..fields import PolyField
 from ._config import ConfigWrapper
@@ -326,7 +327,15 @@ def generate_polyfields(
     For all the fields found in the signature, it will generate
     PolyField type variable.
     """
-    field = PolyField(annotation=parameter.annotation, name=parameter.name)
+    data = {
+        "annotation": parameter.annotation,
+        "name": parameter.name,
+        "default": PolyforceUndefined
+        if parameter.default == Signature.empty
+        else parameter.default,
+    }
+
+    field = PolyField(**data)
     field_data = {field.name: field}
 
     if method not in cls.poly_fields:

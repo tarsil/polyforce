@@ -8,6 +8,7 @@ from polyforce.fields import PolyField
 
 from ._internal._errors import ErrorDetail
 from ._internal._serializer import json_serializable
+from .core._polyforce_core import PolyforceUndefined
 
 
 class polycheck:
@@ -59,7 +60,14 @@ class polycheck:
         PolyField type variable.
         """
         for parameter in self.args_spec.parameters.values():
-            field = PolyField(annotation=parameter.annotation, name=parameter.name)
+            data = {
+                "annotation": parameter.annotation,
+                "name": parameter.name,
+                "default": PolyforceUndefined
+                if parameter.default == inspect.Signature.empty
+                else parameter.default,
+            }
+            field = PolyField(**data)
             field_data = {field.name: field}
 
             if self.fn_name not in self.poly_fields:
