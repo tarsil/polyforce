@@ -4,6 +4,7 @@ from typing import Any, Dict, List, Union, _SpecialForm
 
 from polyforce.constants import CLASS_SPECIAL_WORDS
 from polyforce.exceptions import MissingAnnotation, ReturnSignatureMissing, ValidationError
+from polyforce.fields import PolyField
 
 from ._internal._errors import ErrorDetail
 from ._internal._serializer import json_serializable
@@ -28,9 +29,10 @@ class polycheck:
         self.ignored_types = tuple(ignored_types) if ignored_types is not None else ()
         self.args_spec = None
         self.signature = signature
-        self.fn_name = None
+        self.fn_name: str = None
         self.is_class_or_object: bool = False
         self.class_or_object: Any = None
+        self.poly_fields: Dict[str, Dict[str, PolyField]] = {}
 
     def check_signature(self, func: Any) -> Any:
         """
@@ -51,6 +53,21 @@ class polycheck:
             if name not in CLASS_SPECIAL_WORDS and parameter.annotation == inspect.Parameter.empty:
                 raise MissingAnnotation(name=name)
 
+    def generate_polyfields(self) -> Dict[str, Dict[str, "PolyField"]]:
+        """
+        For all the fields found in the signature, it will generate
+        PolyField type variable.
+        """
+        for parameter in self.args_spec.parameters.values():
+            field = PolyField(annotation=parameter.annotation, name=parameter.name)
+            field_data = {field.name: field}
+
+            if self.fn_name not in self.poly_fields:
+                self.poly_fields[self.fn_name] = {}
+
+            self.poly_fields[self.fn_name].update(field_data)
+        return self.poly_fields
+
     def check_types(self, *args: Any, **kwargs: Any) -> Any:
         """
         Validate the types of function parameters.
@@ -59,37 +76,25 @@ class polycheck:
             *args (Any): Positional arguments.
             **kwargs (Any): Keyword arguments.
         """
-        merged_params: Dict[str, inspect.Signature] = {}
+        merged_params: Dict[str, PolyField] = {}
         if self.is_class_or_object:
             func_type = inspect.getattr_static(self.class_or_object, self.fn_name)
 
             # classmethod and staticmethod do not use the "self".
             if not isinstance(func_type, (classmethod, staticmethod)):
-                func_params = list(islice(self.args_spec.parameters.values(), 1, None))
+                func_params = list(
+                    islice(self.poly_fields.get(self.fn_name, {}).values(), 1, None)
+                )
                 merged_params = {param.name: param for param in func_params}
         else:
-            merged_params = self.args_spec.parameters
+            merged_params = self.poly_fields[self.fn_name]
 
         params = dict(zip(merged_params, args))
         params.update(kwargs)
 
         for name, value in params.items():
-            # Raising error for unknown parameter passed.
-            if name not in self.args_spec.parameters:
-                values = tuple(param.name for param in self.args_spec.parameters.values())
-                error_message: str = (
-                    f"Unexpected parameter '{name}' in {self.fn_name}. Expects {values}"
-                )
-                error: ErrorDetail = ErrorDetail(
-                    source=self.fn_name,
-                    value=json_serializable(value),
-                    input=name,
-                    expected=values,
-                    message=error_message,
-                )
-                raise ValidationError.from_exception_data([error])
-
-            type_hint = self.args_spec.parameters[name].annotation  # type: ignore
+            field: PolyField = self.poly_fields[self.fn_name].get(name)
+            type_hint = field.annotation
 
             if (
                 isinstance(type_hint, _SpecialForm)
@@ -170,6 +175,7 @@ class polycheck:
                 self.class_or_object = args[0]
 
             self.check_signature(fn)
+            self.generate_polyfields()
             self.check_types(*arguments, **kwargs) if self.signature else self.check_types(
                 *args, **kwargs
             )
