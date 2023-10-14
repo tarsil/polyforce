@@ -17,12 +17,9 @@ from typing import (
     cast,
 )
 
-from typing_extensions import get_args, get_origin
-
 from polyforce.exceptions import MissingAnnotation, ReturnSignatureMissing, ValidationError
 
 from ..constants import INIT_FUNCTION, SPECIAL_CHECK
-from ..core import _utils
 from ..decorator import polycheck
 from ..fields import PolyField
 from ._config import ConfigWrapper
@@ -162,13 +159,11 @@ class PolyMetaclass(ABCMeta):
         original_hint = extract_type_hint(Union[int, str])  # Returns Union[int, str]
         ```
         """
-        origin = get_origin(type_hint)
-        if _utils.is_annotated(type_hint):
-            return origin
 
-        if hasattr(type_hint, "__origin__"):
-            return get_args(type_hint)
-        return type_hint
+        origin = getattr(type_hint, "__origin__", type_hint)
+        if isinstance(origin, _SpecialForm):
+            origin = type_hint.__args__  # type: ignore
+        return origin
 
     def _add_static_type_checking(self, func: Any, signature: Signature) -> Callable:
         """

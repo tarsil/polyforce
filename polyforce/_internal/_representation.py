@@ -73,8 +73,8 @@ else:
 
 
 if sys.version_info < (3, 10):
-    NoneType = Type(None)
-    EllipsisType = Type(Ellipsis)
+    NoneType = type(None)
+    EllipsisType = type(Ellipsis)
 else:
     pass
 

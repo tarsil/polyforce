@@ -2,14 +2,11 @@ import inspect
 from itertools import islice
 from typing import Any, Dict, List, Union, _SpecialForm
 
-from typing_extensions import get_args, get_origin
-
 from polyforce.constants import CLASS_SPECIAL_WORDS
 from polyforce.exceptions import MissingAnnotation, ReturnSignatureMissing, ValidationError
 
 from ._internal._errors import ErrorDetail
 from ._internal._serializer import json_serializable
-from .core import _utils
 
 
 class polycheck:
@@ -137,13 +134,10 @@ class polycheck:
         Returns:
             Any: The actual type hint.
         """
-        origin = get_origin(type_hint)
-        if _utils.is_annotated(type_hint):
-            return origin
-
-        if hasattr(type_hint, "__origin__"):
-            return get_args(type_hint)
-        return type_hint
+        origin = getattr(type_hint, "__origin__", type_hint)
+        if isinstance(origin, _SpecialForm):
+            origin = type_hint.__args__
+        return origin
 
     def __call__(self, fn: Any) -> Any:
         """

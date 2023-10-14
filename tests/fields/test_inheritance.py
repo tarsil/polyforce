@@ -37,6 +37,7 @@ def test_poly_fields():
     model = Film(name="PolyModel", age=1)
 
     assert len(model.poly_fields) == 4
+    assert len(model.__signature__) == 4
 
     for value in ["create_model", "get_model", "set_model"]:
         assert value in model.poly_fields
@@ -51,6 +52,7 @@ def test_poly_fields_for_simples_nested_inheritance():
     model = Movie(name="PolyModel", age=1)
 
     assert len(model.poly_fields) == 5
+    assert len(model.__signature__) == 5
 
     for value in ["create_model", "get_model", "set_model", "get_film"]:
         assert value in model.poly_fields
@@ -73,10 +75,11 @@ class MovieFilm(Movie):
         ...
 
 
-def xtest_poly_fields_for_simples_nested_inheritance_init():
+def test_poly_fields_for_simples_nested_inheritance_init():
     model = MovieFilm(movies=["Avengers"])
 
     assert len(model.poly_fields) == 5
+    assert len(model.__signature__) == 6
 
     for value in ["create_model", "get_model", "set_model", "get_film"]:
         assert value in model.poly_fields
