@@ -92,7 +92,7 @@ class PolyModel(metaclass=_construction.PolyMetaclass):
 
     def __repr_args__(self) -> "ReprArgs":
         for k, v in self.__dict__.items():
-            field = self.poly_fields.get(k)
+            field = self.__dict__.get(k)
             if field:
                 yield k, v
 

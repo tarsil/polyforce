@@ -88,10 +88,13 @@ class PolyField(_representation.Representation):
             raise TypeError("cannot specify both default and default_factory")
 
         self.name = kwargs.pop("name", None)
-        self._validate_default_with_annotation()
+
         self.title = kwargs.pop("title", None)
         self.description = kwargs.pop("description", None)
         self.metadata = metadata
+
+        if self.default and self.default != PolyforceUndefined and self.annotation:
+            self._validate_default_with_annotation()
 
     def _extract_type_hint(self, type_hint: Union[Type, tuple]) -> Any:
         """
@@ -117,7 +120,6 @@ class PolyField(_representation.Representation):
         original_hint = extract_type_hint(Union[int, str])  # Returns Union[int, str]
         ```
         """
-
         origin = getattr(type_hint, "__origin__", type_hint)
         if isinstance(origin, _SpecialForm):
             origin = type_hint.__args__  # type: ignore
@@ -131,7 +133,7 @@ class PolyField(_representation.Representation):
         if not self.default or self.default == PolyforceUndefined:
             return None
 
-        default = self.default() if callable(self.default) else self.default
+        default = self.get_default()
 
         type_hint = self._extract_type_hint(self.annotation)
         if not isinstance(default, type_hint):
@@ -160,6 +162,14 @@ class PolyField(_representation.Representation):
             `True` if the argument is required, `False` otherwise.
         """
         return self.default is PolyforceUndefined and self.default_factory is None
+
+    def get_default(self) -> Any:
+        """
+        Returns the default is
+        """
+        if self.default_factory is None:
+            return self.default() if callable(self.default) else self.default
+        return self.default_factory()
 
     @classmethod
     def from_field(cls, default: Any = PolyforceUndefined, **kwargs: Unpack[_FieldInputs]) -> Self:
@@ -212,11 +222,13 @@ def Field(
     *,
     default_factory: Union[Callable[[], Any], None] = PolyforceUndefined,
     title: Union[str, None] = PolyforceUndefined,  # type: ignore
+    name: Union[str, None] = PolyforceUndefined,  # type: ignore
     description: Union[str, None] = PolyforceUndefined,  # type: ignore
-) -> PolyField:
+) -> Any:
     return PolyField.from_field(
         default=default,
         default_factory=default_factory,
         title=title,
         description=description,
+        name=name,
     )

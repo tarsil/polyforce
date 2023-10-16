@@ -60,21 +60,61 @@ class polycheck:
         PolyField type variable.
         """
         for parameter in self.args_spec.parameters.values():
-            data = {
-                "annotation": parameter.annotation,
-                "name": parameter.name,
-                "default": PolyforceUndefined
-                if parameter.default == inspect.Signature.empty
-                else parameter.default,
-            }
-            field = PolyField(**data)
-            field_data = {field.name: field}
+            if not isinstance(parameter.default, PolyField):
+                data = {
+                    "annotation": parameter.annotation,
+                    "name": parameter.name,
+                    "default": PolyforceUndefined
+                    if parameter.default == inspect.Signature.empty
+                    else parameter.default,
+                }
+                field = PolyField(**data)
+            else:
+                field = parameter.default
+                field.annotation = parameter.annotation
+                field.name = parameter.name
+                field._validate_default_with_annotation()
+
+            field_data = {parameter.name: field}
 
             if self.fn_name not in self.poly_fields:
                 self.poly_fields[self.fn_name] = {}
 
             self.poly_fields[self.fn_name].update(field_data)
         return self.poly_fields
+
+    def _extract_params(self) -> Dict[str, PolyField]:
+        """
+        Extracts the params based on the type function.
+
+        If a function is of type staticmethod, means there is no `self`
+        or `cls` and therefore uses the signature or argspec generated.
+
+        If a function is of type classmethod or a simple function in general,
+        then validates if is a class or an object and extracts the values.
+
+        Returns:
+            Dict[str, PolyField]: A dictionary of function parameters.
+        """
+        if not self.is_class_or_object:
+            return self.poly_fields[self.fn_name]
+
+        params: Dict[str, PolyField] = {}
+
+        # Get the function type (staticmethod, classmethod, or regular method)
+        func_type = getattr(self.class_or_object, self.fn_name)
+
+        if not isinstance(func_type, staticmethod):
+            if self.signature:
+                # If a signature is provided, use it to get function parameters
+                func_params = list(self.signature.parameters.values())
+            else:
+                # If no signature, use the poly_fields dictionary (modify as per your actual data structure)
+                func_params = list(
+                    islice(self.poly_fields.get(self.fn_name, {}).values(), 1, None)  # type: ignore[arg-type]
+                )
+            params = {param.name: param for param in func_params}
+        return params
 
     def check_types(self, *args: Any, **kwargs: Any) -> Any:
         """
@@ -84,20 +124,8 @@ class polycheck:
             *args (Any): Positional arguments.
             **kwargs (Any): Keyword arguments.
         """
-        merged_params: Dict[str, PolyField] = {}
-        if self.is_class_or_object:
-            func_type = inspect.getattr_static(self.class_or_object, self.fn_name)
 
-            # classmethod and staticmethod do not use the "self".
-            if not isinstance(func_type, (classmethod, staticmethod)):
-                func_params = list(
-                    islice(self.poly_fields.get(self.fn_name, {}).values(), 1, None)
-                )
-                merged_params = {param.name: param for param in func_params}
-        else:
-            merged_params = self.poly_fields[self.fn_name]
-
-        params = dict(zip(merged_params, args))
+        params = dict(zip(self._extract_params(), args))
         params.update(kwargs)
 
         for name, value in params.items():
@@ -179,6 +207,8 @@ class polycheck:
             if self.signature or len(args) == 1:
                 arguments = list(args)
                 arguments = arguments[1:]
+
+                # Is a class or an object
                 self.is_class_or_object = True
                 self.class_or_object = args[0]
 
