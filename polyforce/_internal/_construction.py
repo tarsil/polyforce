@@ -378,8 +378,8 @@ def generate_model_signature(
 
     This function generates a signature for each method of the given class.
     """
-    func = getattr(cls, value)
     func_type = inspect.getattr_static(cls, value)
+    func = func_type.__func__ if isinstance(func_type, (classmethod, staticmethod)) else func_type
 
     signature = Signature.from_callable(func)
     if config.ignore:
@@ -391,7 +391,7 @@ def generate_model_signature(
         raise ReturnSignatureMissing(func=value)
 
     # classmethod and staticmethod do not use the "self".
-    if not isinstance(func_type, (classmethod, staticmethod)):
+    if not isinstance(func_type, (staticmethod)):
         params = list(islice(params, 1, None))  # type: ignore[assignment]
 
     for param in params:  # Skip self argument
