@@ -13,7 +13,7 @@ if TYPE_CHECKING:
 class _FieldInputs(TypedDict, total=False):
     annotation: Union[Type[Any], None]
     default: Any
-    default_factory: Union[Callable[[], Any], None]
+    factory: Union[Callable[[], Any], None]
     title: Union[str, None]
     name: Union[str, None]
     description: Union[str, None]
@@ -21,7 +21,7 @@ class _FieldInputs(TypedDict, total=False):
 
 _DefaultValues = {
     "default": ...,
-    "default_factory": None,
+    "factory": None,
     "title": None,
     "description": None,
 }
@@ -42,7 +42,7 @@ class PolyField(_representation.Representation):
     Attributes:
         annotation: The type annotation of the field.
         default: The default value of the field.
-        default_factory: The default function used to build the default for the field.
+        factory: The default function used to build the default for the field.
         title: The title of the field.
         description: The description of the field.
     """
@@ -50,7 +50,7 @@ class PolyField(_representation.Representation):
     __slots__ = (
         "annotation",
         "default",
-        "default_factory",
+        "factory",
         "title",
         "name",
         "description",
@@ -60,7 +60,7 @@ class PolyField(_representation.Representation):
 
     annotation: Union[Type[Any], None]
     default: Any
-    default_factory: Union[Callable[[], Any], None]
+    factory: Union[Callable[[], Any], None]
     title: Union[str, None]
     name: Union[str, None]
     description: Union[str, None]
@@ -82,10 +82,10 @@ class PolyField(_representation.Representation):
         else:
             self.default = default
 
-        self.default_factory = kwargs.pop("default_factory", None)
+        self.factory = kwargs.pop("factory", None)
 
-        if self.default is not PolyforceUndefined and self.default_factory is not None:
-            raise TypeError("cannot specify both default and default_factory")
+        if self.default is not PolyforceUndefined and self.factory is not None:
+            raise TypeError("cannot specify both default and factory")
 
         self.name = kwargs.pop("name", None)
 
@@ -161,15 +161,15 @@ class PolyField(_representation.Representation):
         Returns:
             `True` if the argument is required, `False` otherwise.
         """
-        return self.default is PolyforceUndefined and self.default_factory is None
+        return self.default is PolyforceUndefined and self.factory is None
 
     def get_default(self) -> Any:
         """
         Returns the default is
         """
-        if self.default_factory is None:
+        if self.factory is None:
             return self.default() if callable(self.default) else self.default
-        return self.default_factory()
+        return self.factory()
 
     @classmethod
     def from_field(cls, default: Any = PolyforceUndefined, **kwargs: Unpack[_FieldInputs]) -> Self:
@@ -207,9 +207,9 @@ class PolyField(_representation.Representation):
                 continue
             elif s == "metadata" and not self.metadata:
                 continue
-            if s == "default_factory" and self.default_factory is not None:
-                yield "default_factory", _representation.PlainRepr(
-                    _representation.display_as_type(self.default_factory)
+            if s == "factory" and self.factory is not None:
+                yield "factory", _representation.PlainRepr(
+                    _representation.display_as_type(self.factory)
                 )
             else:
                 value = getattr(self, s)
@@ -220,14 +220,14 @@ class PolyField(_representation.Representation):
 def Field(
     default: Any = PolyforceUndefined,
     *,
-    default_factory: Union[Callable[[], Any], None] = PolyforceUndefined,
+    factory: Union[Callable[[], Any], None] = PolyforceUndefined,
     title: Union[str, None] = PolyforceUndefined,  # type: ignore
     name: Union[str, None] = PolyforceUndefined,  # type: ignore
     description: Union[str, None] = PolyforceUndefined,  # type: ignore
 ) -> Any:
     return PolyField.from_field(
         default=default,
-        default_factory=default_factory,
+        factory=factory,
         title=title,
         description=description,
         name=name,

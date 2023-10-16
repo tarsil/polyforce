@@ -52,7 +52,6 @@ you don't want them to be static checked.
 This will make sure that the type `Actor` is actually ignore and assumed as type `Any` which also means
 you can pass whatever value you desire since the type `Actor` is no longer checked.
 
-
 ### Integrations
 
 **Polyforce** works also really well with integrations, for instance with [Pydantic](https://pydantic.dev).
@@ -65,3 +64,15 @@ functions you want to enforce.
 ```
 
 This way you can use your favourite libraries with **Polyforce**.
+
+## Inheritance
+
+The [PolyModel](#polymodel) works with inheritance as per normal subclassing, which means you
+can still override functions with the same name and perform any inheritance action.
+
+```python hl_lines="46-51 55"
+{!> ../docs_src/model/inheritance.py !}
+```
+
+As you can see, the `__init__` was overridden and a new signature was generated ad the `set_name`
+for the `Serie` has now a different signature that will be enforced accordingly.

@@ -27,6 +27,7 @@ theme:
             - search.suggest
             - search.highlight
             - content.tabs.link
+            - content.code.copy
 
 repo_name: tarsil/polyforce
 repo_url: https://github.com/tarsil/polyforce
@@ -40,6 +41,7 @@ nav:
       - Introduction: "index.md"
       - Model: "model.md"
       - Decorator: "decorator.md"
+      - PolyField: "polyfield.md"
       - Config: "config.md"
       - Contributing: "contributing.md"
       - Sponsorship: "sponsorship.md"

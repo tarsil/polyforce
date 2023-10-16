@@ -124,13 +124,28 @@ class polycheck:
             *args (Any): Positional arguments.
             **kwargs (Any): Keyword arguments.
         """
+        extracted_params = self._extract_params()
+        merged_params: Dict[str, Any] = {}
+
+        # Extracts any default value
+        for key, param in extracted_params.items():
+            if (
+                isinstance(param.default, PolyField)
+                and param.default.default != PolyforceUndefined
+            ):
+                merged_params[key] = param.default.get_default()
 
         params = dict(zip(self._extract_params(), args))
         params.update(kwargs)
+        params.update(merged_params)
 
         for name, value in params.items():
             field: PolyField = self.poly_fields[self.fn_name][name]
             type_hint = field.annotation
+
+            if isinstance(value, PolyField):
+                if value.default is not None and value.default:
+                    value = value.default
 
             if (
                 isinstance(type_hint, _SpecialForm)

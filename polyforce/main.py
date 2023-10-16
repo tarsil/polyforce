@@ -52,6 +52,10 @@ class PolyModel(metaclass=_construction.PolyMetaclass):
                 f"{name!r} is a ClassVar of `{self.__class__.__name__}` and cannot be set on an instance. "
                 f"If you want to set a value on the class, use `{self.__class__.__name__}.{name} = value`."
             )
+
+        if isinstance(value, PolyField) and value.default is not None:
+            value = value.default
+
         _object_setattr(self, name, value)
 
     def __getattribute__(self, name: str) -> Any:

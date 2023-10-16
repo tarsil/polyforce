@@ -71,7 +71,7 @@ class MovieFilm(Movie):
     def get_movies(self) -> None:
         ...
 
-    def set_model(self) -> None:
+    def set_model(self, name: str) -> None:
         ...
 
 
