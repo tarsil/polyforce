@@ -1,5 +1,7 @@
 from typing import Any, Dict, List, Mapping, Union
 
+import pytest
+
 from polyforce import Field, PolyField, PolyModel
 
 
@@ -30,3 +32,11 @@ def test_no_annotation():
     field: PolyField = Field(default=2, name="name")
 
     assert field.annotation is None
+
+
+def test_raise_type_error_on_default_field():
+    with pytest.raises(TypeError):
+
+        class NotherModel(PolyModel):
+            def __init__(self, name: str = Field(default=2)) -> None:
+                ...
