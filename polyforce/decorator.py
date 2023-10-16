@@ -60,15 +60,22 @@ class polycheck:
         PolyField type variable.
         """
         for parameter in self.args_spec.parameters.values():
-            data = {
-                "annotation": parameter.annotation,
-                "name": parameter.name,
-                "default": PolyforceUndefined
-                if parameter.default == inspect.Signature.empty
-                else parameter.default,
-            }
-            field = PolyField(**data)
-            field_data = {field.name: field}
+            if not isinstance(parameter.default, PolyField):
+                data = {
+                    "annotation": parameter.annotation,
+                    "name": parameter.name,
+                    "default": PolyforceUndefined
+                    if parameter.default == inspect.Signature.empty
+                    else parameter.default,
+                }
+                field = PolyField(**data)
+            else:
+                field = parameter.default
+                field.annotation = parameter.annotation
+                field.name = parameter.name
+                field._validate_default_with_annotation()
+
+            field_data = {parameter.name: field}
 
             if self.fn_name not in self.poly_fields:
                 self.poly_fields[self.fn_name] = {}
